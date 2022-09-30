@@ -3,18 +3,33 @@ package routes
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/muh-hizbe/relasi-gorm/controllers"
+	"github.com/muh-hizbe/relasi-gorm/repositories"
+	"github.com/muh-hizbe/relasi-gorm/services"
 )
 
 func RouteInit(app *fiber.App) {
-	app.Get("/users", controllers.UserGetAll)
-	app.Post("/users", controllers.CreateUser)
+	userRepo := repositories.NewUserRepository()
+	userService := services.NewUserService(&userRepo)
+	userController := controllers.NewUserController(&userService)
+	app.Get("/users", userController.GetAll)
+	app.Post("/users", userController.Create)
 
-	app.Get("/lockers", controllers.LockerGetAll)
-	app.Post("/lockers", controllers.CreateLocker)
+	lockerRepo := repositories.NewLockerRepository()
+	lockerService := services.NewLockerService(&lockerRepo)
+	lockerController := controllers.NewLockerController(&lockerService)
+	app.Get("/lockers", lockerController.GetAll)
+	app.Post("/lockers", lockerController.Create)
 
-	app.Get("/posts", controllers.PostGetAll)
-	app.Post("/posts", controllers.CreatePost)
+	postRepo := repositories.NewPostRepository()
+	postTagRepo := repositories.NewPostTagRepository()
+	postService := services.NewPostService(&postRepo, &postTagRepo)
+	postController := controllers.NewPostController(&postService)
+	app.Get("/posts", postController.GetAll)
+	app.Post("/posts", postController.Create)
 
-	app.Get("/tags", controllers.TagGetAll)
-	app.Post("/tags", controllers.CreateTag)
+	tagRepo := repositories.NewTagReposotory()
+	tagService := services.NewTagService(&tagRepo)
+	tagController := controllers.NewTagController(&tagService)
+	app.Get("/tags", tagController.GetAll)
+	app.Post("/tags", tagController.Create)
 }

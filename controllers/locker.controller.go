@@ -2,46 +2,54 @@ package controllers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/muh-hizbe/relasi-gorm/database"
 	"github.com/muh-hizbe/relasi-gorm/models"
+	"github.com/muh-hizbe/relasi-gorm/services"
 )
 
-func LockerGetAll(c *fiber.Ctx) error {
-	var lockers []models.Locker
+type LockerController struct {
+	lockerService services.LockerService
+}
 
-	database.DB.Preload("User").Find(&lockers)
+func NewLockerController(lockerService *services.LockerService) LockerController {
+	return LockerController{
+		lockerService: *lockerService,
+	}
+}
+
+func (lc *LockerController) GetAll(c *fiber.Ctx) error {
+	lockers, _ := lc.lockerService.GetAllData()
 
 	return c.JSON(fiber.Map{
 		"lockers": lockers,
 	})
 }
 
-func CreateLocker(c *fiber.Ctx) error {
-	locker := new(models.Locker)
+func (lc *LockerController) Create(c *fiber.Ctx) error {
+	lockerRequest := new(models.LockerRequest)
 
 	// PARSE BODY REQUEST TO OBJECT STRUCT
-	if err := c.BodyParser(locker); err != nil {
+	if err := c.BodyParser(lockerRequest); err != nil {
 		return c.Status(503).JSON(fiber.Map{
 			"err": "can't handle request",
 		})
 	}
 
-	// MANUAL VALIDATION
-	if locker.Code == "" {
+	errValidation := lc.lockerService.Validation(*lockerRequest)
+	if errValidation != nil {
 		return c.Status(400).JSON(fiber.Map{
-			"err": "code is required",
-		})
-	}
-	if locker.UserID == 0 {
-		return c.Status(400).JSON(fiber.Map{
-			"err": "user_id is required",
+			"err": errValidation.Error(),
 		})
 	}
 
-	database.DB.Create(&locker)
+	lockerResponse, errNew := lc.lockerService.New(*lockerRequest)
+	if errNew != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"err": "internal server error",
+		})
+	}
 
 	return c.JSON(fiber.Map{
 		"message": "create data successfully",
-		"locker":  locker,
+		"locker":  lockerResponse,
 	})
 }

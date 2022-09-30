@@ -2,65 +2,54 @@ package controllers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/muh-hizbe/relasi-gorm/database"
 	"github.com/muh-hizbe/relasi-gorm/models"
+	"github.com/muh-hizbe/relasi-gorm/services"
 )
 
-func PostGetAll(c *fiber.Ctx) error {
-	var posts []models.PostResponseWithTag
+type PostController struct {
+	postService services.PostService
+}
 
-	database.DB.Preload("User").Preload("Tags").Find(&posts)
+func NewPostController(postService *services.PostService) PostController {
+	return PostController{
+		postService: *postService,
+	}
+}
+
+func (pc *PostController) GetAll(c *fiber.Ctx) error {
+	posts, _ := pc.postService.GetAllData()
 
 	return c.JSON(fiber.Map{
 		"posts": posts,
 	})
 }
 
-func CreatePost(c *fiber.Ctx) error {
-	post := new(models.Post)
+func (pc *PostController) Create(c *fiber.Ctx) error {
+	postRequest := new(models.PostRequest)
 
 	// PARSE BODY REQUEST TO OBJECT STRUCT
-	if err := c.BodyParser(post); err != nil {
+	if err := c.BodyParser(postRequest); err != nil {
 		return c.Status(503).JSON(fiber.Map{
 			"err": "can't handle request",
 		})
 	}
 
-	// MANUAL VALIDATION
-	if post.Title == "" {
+	errValidation := pc.postService.Validation(*postRequest)
+	if errValidation != nil {
 		return c.Status(400).JSON(fiber.Map{
-			"err": "title is required",
-		})
-	}
-	if post.Body == "" {
-		return c.Status(400).JSON(fiber.Map{
-			"err": "body is required",
-		})
-	}
-	if post.UserID == 0 {
-		return c.Status(400).JSON(fiber.Map{
-			"err": "user_id is required",
-		})
-	}
-	if len(post.TagsID) == 0 {
-		return c.Status(400).JSON(fiber.Map{
-			"err": "tags_id is required",
+			"err": errValidation.Error(),
 		})
 	}
 
-	database.DB.Debug().Create(&post)
-
-	if len(post.TagsID) > 0 {
-		for _, tagID := range post.TagsID {
-			postTag := new(models.PostTag)
-			postTag.PostID = post.ID
-			postTag.TagID = tagID
-			database.DB.Create(&postTag)
-		}
+	postResponse, errNew := pc.postService.New(*postRequest)
+	if errNew != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"err": "internal server error",
+		})
 	}
 
 	return c.JSON(fiber.Map{
 		"message": "create data successfully",
-		"post":    post,
+		"post":    postResponse,
 	})
 }

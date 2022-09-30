@@ -10,6 +10,13 @@ type Post struct {
 	TagsID []int        `json:"tags_id" form:"tags_id" gorm:"-"`
 }
 
+type PostRequest struct {
+	Title  string `json:"title" form:"title" gorm:"not null"`
+	Body   string `json:"body" form:"body" gorm:"not null"`
+	UserID int    `json:"user_id" form:"user_id"`
+	TagsID []int  `json:"tags_id" form:"tags_id" gorm:"-"`
+}
+
 type PostResponse struct {
 	ID     int    `json:"id"`
 	Title  string `json:"title" form:"title"`
@@ -31,6 +38,10 @@ type PostResponseWithTag struct {
 	User   UserResponse `json:"user"`
 	UserID int          `json:"-" form:"user_id"`
 	Tags   []Tag        `json:"tags" gorm:"many2many:post_tags;ForeignKey:ID;joinForeignKey:PostID;References:ID;joinReferences:TagID"`
+}
+
+func (PostRequest) TableName() string {
+	return "posts"
 }
 
 func (PostResponse) TableName() string {

@@ -7,6 +7,11 @@ type Locker struct {
 	User   UserResponse `json:"user"`
 }
 
+type LockerRequest struct {
+	Code   string       `json:"code" form:"code" gorm:"unique;not null"`
+	UserID int          `json:"user_id" form:"user_id" gorm:"not null"`
+}
+
 type LockerResponse struct {
 	ID     int    `json:"id" form:"id"`
 	Code   string `json:"code" form:"code"`

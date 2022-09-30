@@ -5,6 +5,10 @@ type Tag struct {
 	Name string `json:"name" gorm:"not null"`
 }
 
+type TagRequest struct {
+	Name string `json:"name" gorm:"not null"`
+}
+
 type TagResponseWithPost struct {
 	ID    int                        `json:"id"`
 	Name  string                     `json:"name"`

@@ -2,38 +2,51 @@ package controllers
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/muh-hizbe/relasi-gorm/database"
 	"github.com/muh-hizbe/relasi-gorm/models"
+	"github.com/muh-hizbe/relasi-gorm/services"
 )
 
-func UserGetAll(c *fiber.Ctx) error {
-	var users []models.User
+type UserController struct {
+	userService services.UserService
+}
 
-	database.DB.Preload("Locker").Preload("Posts").Find(&users)
+func NewUserController(userService *services.UserService) UserController {
+	return UserController{
+		userService: *userService,
+	}
+}
+
+func (uc *UserController) GetAll(c *fiber.Ctx) error {
+	users, _ := uc.userService.GetAllData()
 
 	return c.JSON(fiber.Map{
 		"users": users,
 	})
 }
 
-func CreateUser(c *fiber.Ctx) error {
-	user := new(models.User)
+func (uc *UserController) Create(c *fiber.Ctx) error {
+	userRequest := new(models.UserRequest)
 
 	// PARSE BODY REQUEST TO OBJECT STRUCT
-	if err := c.BodyParser(user); err != nil {
+	if err := c.BodyParser(userRequest); err != nil {
 		return c.Status(503).JSON(fiber.Map{
 			"err": "can't handle request",
 		})
 	}
 
-	// MANUAL VALIDATION
-	if user.Name == "" {
+	errValidation := uc.userService.Validation(*userRequest)
+	if errValidation != nil {
 		return c.Status(400).JSON(fiber.Map{
-			"err": "name is required",
+			"err": errValidation.Error(),
 		})
 	}
 
-	database.DB.Create(&user)
+	user, errNew := uc.userService.New(*userRequest)
+	if errNew != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"err": "internal server error",
+		})
+	}
 
 	return c.JSON(fiber.Map{
 		"message": "create data successfully",

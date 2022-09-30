@@ -7,6 +7,10 @@ type User struct {
 	Posts  []PostResponse `json:"posts"`
 }
 
+type UserRequest struct {
+	Name   string         `json:"name" form:"name" gorm:"not null"`
+}
+
 type UserResponse struct {
 	ID   int    `json:"id" form:"id"`
 	Name string `json:"name" form:"name"`
